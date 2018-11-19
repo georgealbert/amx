@@ -8,7 +8,7 @@
 ;;         Cornelius Mika <cornelius.mika@gmail.com>
 ;; Maintainer: Ryan C. Thompson <rct@thompsonclan.org>
 ;; URL: http://github.com/DarwinAwardWinner/amx/
-;; Package-Requires: ((emacs "24.4") (s "0"))
+;; Package-Requires: ((emacs "24.4") (s "0") (named-timer "0"))
 ;; Version: 3.2
 ;; Keywords: convenience, usability
 
@@ -39,6 +39,7 @@
 
 (require 'cl-lib)
 (require 's)
+(require 'named-timer)
 
 (defvar amx-initialized nil
   "If non-nil amx is initialized.")
@@ -88,14 +89,6 @@ This is used to determine which buffer's key bindings to use when
 
 Each time `amx-prompt-with-prefix-arg' is called, this is reset
 to nil.")
-
-;; This timer will run every time Emacs is idle for 1 second, but most
-;; of the time it will do nothing.
-(defvar amx-short-idle-update-timer nil)
-;; This timer forces a periodic updates to happen if you walk away for
-;; a few hours, so that amx won't wait until you come back to do a
-;; periodic update
-(defvar amx-long-idle-update-timer nil)
 
 (defvar amx-last-update-time nil
   "Time when `amx-update' was last run.
@@ -154,15 +147,10 @@ In addition to setting the variable, this will also set up an
 idle timer to ensure that updates happen when idle."
   (cl-assert (eq symbol 'amx-auto-update-interval))
   (set-default symbol value)
-  ;; Cancel any previous timer
-  (when amx-long-idle-update-timer
-    (cancel-timer amx-long-idle-update-timer)
-    (setq amx-long-idle-update-timer nil))
-  (when value
-    ;; Enable idle updating
-    (setq amx-long-idle-update-timer
-          (run-with-idle-timer (1+ (* 60 value)) t
-                               'amx-idle-update))))
+  (if value
+      (named-timer-idle-run :amx-long-idle-update
+        (1+ (* 60 value)) t 'amx-idle-update)
+    (named-timer-cancel :amx-long-idle-update)))
 
 (defcustom amx-auto-update-interval nil
   "Time in minutes between periodic updates of the command list.
@@ -1214,6 +1202,7 @@ reversing the effect of a previous `amx-ignore'. "
 Optional argument FORCE tells amx to completely rebuild all of
 its cached data, even if it believes that data is already
 current."
+  ;; Don't do an update while amx is running.
   (unless (and (amx-active)
                (minibufferp))
     (amx-initialize)
@@ -1229,13 +1218,8 @@ current."
       (amx-update-if-needed do-recount))))
 
 ;; This does a quick update every time emacs is idle
-(progn
-  ;; Make sure we don't run multiple instances of the timer when
-  ;; re-evaluating this file multiple times
-  (when amx-short-idle-update-timer
-    (cancel-timer amx-short-idle-update-timer))
-  (setq amx-short-idle-update-timer
-      (run-with-idle-timer 1 t 'amx-idle-update)))
+(named-timer-idle-run :amx-short-idle-update
+  1 t 'amx-idle-update)
 
 (provide 'amx)
 ;;; amx.el ends here

@@ -3,6 +3,9 @@
 
 (package-file "amx.el")
 (depends-on "s")
+(depends-on "named-timer"
+            :git "https://github.com/DarwinAwardWinner/emacs-named-timer"
+            :files ("*.el"))
 
 (development
  (depends-on "ido-completing-read+")
