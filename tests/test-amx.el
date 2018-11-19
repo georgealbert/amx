@@ -5,6 +5,8 @@
 (require 'buttercup)
 (require 'cl-lib)
 (require 'with-simulated-input)
+(require 'timer)
+(require 'named-timer)
 ;; Need to load these to ensure certian functions are not autoloads
 (require 'help-fns)
 (require 'find-func)
@@ -411,10 +413,9 @@ equal."
 
     (it "should cancel the long-update timer when `auto-update-interval' is nil"
       (customize-set-variable 'amx-auto-update-interval 60)
-      (expect amx-long-idle-update-timer
-              :to-be-truthy)
+      (expect (timerp (named-timer-get :amx-long-idle-update)))
       (customize-set-variable 'amx-auto-update-interval nil)
-      (expect amx-long-idle-update-timer
+      (expect (named-timer-get :amx-long-idle-update)
               :not :to-be-truthy)))
 
   (describe "with `amx-save-file'"
