@@ -11,4 +11,5 @@
  (depends-on "with-simulated-input"
              :git "https://github.com/DarwinAwardWinner/with-simulated-input.git"
              :files ("*.el"))
- (depends-on "buttercup"))
+ (depends-on "buttercup" "1.9")
+ (depends-on "undercover"))

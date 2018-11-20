@@ -6,8 +6,10 @@ ELC_FILES := $(patsubst %.el,%.elc,$(ELISP_FILES))
 
 all: test
 
-test: $(ELC_FILES)
-	cask exec buttercup -L .
+# We run clean-elc before testing because undercover.el doesn't support elc
+# files.
+test: clean
+	cask exec buttercup -L . tests
 
 compile: $(ELC_FILES)
 
