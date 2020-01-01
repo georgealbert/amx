@@ -200,62 +200,67 @@ equal."
       (expect 'ido-completing-read+
               :to-have-been-called)))
 
-  (describe "ivy backend"
+  (if (locate-library "ivy")
+      (describe "ivy backend"
 
-    (before-each
-      (customize-set-variable 'amx-backend 'ivy)
-      (spy-on 'ivy-read :and-call-through))
+        (before-each
+          (customize-set-variable 'amx-backend 'ivy)
+          (spy-on 'ivy-read :and-call-through))
 
-    (it "should load `ivy' when selected"
-      (customize-set-variable 'amx-backend 'ivy)
-      (expect (featurep 'ivy)))
+        (it "should load `ivy' when selected"
+          (customize-set-variable 'amx-backend 'ivy)
+          (expect (featurep 'ivy)))
 
-    (it "should call `ivy-read'"
-      (expect
-       (with-simulated-input "ignore RET"
-         (amx-completing-read '("ignore")))
-       :to-equal "ignore")
-      (expect 'ivy-read
-              :to-have-been-called)))
+        (it "should call `ivy-read'"
+          (expect
+           (with-simulated-input "ignore RET"
+             (amx-completing-read '("ignore")))
+           :to-equal "ignore")
+          (expect 'ivy-read
+                  :to-have-been-called)))
+    (xdescribe "ivy-backend"))
 
-  (describe "auto backend"
+  (if (and (locate-library "ido-completing-read+")
+           (locate-library "ivy"))
+      (describe "auto backend"
 
-    (before-each
-      (customize-set-variable 'amx-backend 'auto)
-      ;; Pre-load features so we can spy on their functions
-      (require 'ido-completing-read+)
-      (require 'ivy)
-      ;; Reset all of these modes to their standard values
-      ;; before each test
-      (test-save-custom-vars '(ido-mode ivy-mode))
-      ;; Start with both modes off
-      (ido-mode 0)
-      (ivy-mode 0)
-      (cl-loop
-       for fun in
-       '(completing-read-default ido-completing-read+ ivy-read)
-       do (spy-on fun :and-return-value "ignore")))
+        (before-each
+          (customize-set-variable 'amx-backend 'auto)
+          ;; Pre-load features so we can spy on their functions
+          (require 'ido-completing-read+)
+          (require 'ivy)
+          ;; Reset all of these modes to their standard values
+          ;; before each test
+          (test-save-custom-vars '(ido-mode ivy-mode))
+          ;; Start with both modes off
+          (ido-mode 0)
+          (ivy-mode 0)
+          (cl-loop
+           for fun in
+           '(completing-read-default ido-completing-read+ ivy-read)
+           do (spy-on fun :and-return-value "ignore")))
 
-    ;; Restore the saved value after each test
-    (after-each
-      (test-restore-custom-vars '(ido-mode ivy-mode)))
+        ;; Restore the saved value after each test
+        (after-each
+          (test-restore-custom-vars '(ido-mode ivy-mode)))
 
-    (it "should normally use standard completion"
-      (amx-completing-read '("ignore"))
-      (expect 'completing-read-default
-              :to-have-been-called))
+        (it "should normally use standard completion"
+          (amx-completing-read '("ignore"))
+          (expect 'completing-read-default
+                  :to-have-been-called))
 
-    (it "should use ido completion when `ido-mode' or `ido-ubiquitous-mode' are enabled"
-      (ido-mode 1)
-      (amx-completing-read '("ignore"))
-      (expect 'ido-completing-read+
-              :to-have-been-called))
+        (it "should use ido completion when `ido-mode' or `ido-ubiquitous-mode' are enabled"
+          (ido-mode 1)
+          (amx-completing-read '("ignore"))
+          (expect 'ido-completing-read+
+                  :to-have-been-called))
 
-    (it "should use ivy completion when `ivy-mode' is enabled"
-      (ivy-mode 1)
-      (amx-completing-read '("ignore"))
-      (expect 'ivy-read
-              :to-have-been-called)))
+        (it "should use ivy completion when `ivy-mode' is enabled"
+          (ivy-mode 1)
+          (amx-completing-read '("ignore"))
+          (expect 'ivy-read
+                  :to-have-been-called)))
+    (xdescribe "auto backend"))
 
   (describe "with `amx-show-key-bindings'"
 
