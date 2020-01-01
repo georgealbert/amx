@@ -35,6 +35,8 @@ before_script:
   - perl -ibak -lape 's{#!/usr/bin/env python}{#!/usr/bin/python}' "$(which cask)"
   # Check that cask is finding the right emacs
   - cask emacs --version
+  # Use version-specific Cask file if it exists
+  - if [ -e "Cask-$EMACS_VERSION" ]; then cp "Cask-$EMACS_VERSION" "Cask"; fi
   # Install elisp dependencies
   - cask install
 
