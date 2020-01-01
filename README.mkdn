@@ -128,4 +128,4 @@ package. New features include multiple completion backends,
 showing/completing on key bindings, and hiding irrelevant commands.
 
 Since the last tagged release of Smex was version 3.0, the first
-release version of Amx will be 4.0.
+release version of Amx is 3.1.
