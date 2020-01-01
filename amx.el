@@ -812,15 +812,16 @@ copy `smex-save-file' to `amx-save-file' and load it."
 (defun amx-save-to-file ()
   "Save Amx history and cache to `amx-save-file' for future sessions."
   (interactive)
-  ;; If `init-file-user' is nil, we are running under "emacs -Q", so
-  ;; don't save anything to disk
-  (if init-file-user
-      (when amx-save-file
-        (amx-save-history)
-        (with-temp-file (expand-file-name amx-save-file)
-          (amx-pp amx-history)
-          (amx-pp amx-data)))
-    (display-warning 'amx "Not saving amx state from \"emacs -Q\".")))
+  (when amx-save-file
+    ;; If `init-file-user' is nil, we are running under "emacs -Q", so
+    ;; don't save anything to disk
+    (if init-file-user
+        (progn
+          (amx-save-history)
+          (with-temp-file (expand-file-name amx-save-file)
+            (amx-pp amx-history)
+            (amx-pp amx-data)))
+      (display-warning 'amx "Not saving amx state from \"emacs -Q\"."))))
 
 ;;--------------------------------------------------------------------------------
 ;; Ranking
