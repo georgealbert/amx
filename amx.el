@@ -584,7 +584,13 @@ May not work for things like ido and ivy."
   (helm-comp-read (amx-prompt-with-prefix-arg) choices
                   :initial-input initial-input
                   :test predicate
-                  :default def))
+                  :default def
+                  :name "Helm M-x Completions"
+                  :buffer "Helm M-x Completions"
+                  :history extended-command-history
+                  :reverse-history t
+                  :must-match t
+                  :keymap (make-composed-keymap amx-map helm-comp-read-map)))
 
 (amx-define-backend
  :name 'helm
@@ -594,7 +600,7 @@ May not work for things like ido and ivy."
  :required-feature 'helm)
 
 (cl-defun amx-completing-read-auto (choices &key initial-input predicate def)
-  "Automatically select between ivy, ido, and standard completion."
+  "Automatically select the appropriate completion system for M-x."
   (let ((backend
          (cond
           ((bound-and-true-p ivy-mode) 'ivy)
