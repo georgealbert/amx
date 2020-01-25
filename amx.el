@@ -477,13 +477,16 @@ minibuffer."
                                    required-feature)
   (cl-assert
    (and (symbolp name) name
-        (functionp comp-fun)
-        (functionp get-text-fun)
-        (functionp exit-fun)
+        ;; Unfortunately we can't rely on these to be defined as
+        ;; functions since their respective packages may not be
+        ;; loaded.
+        (or (functionp comp-fun) (symbolp comp-fun))
+        (or (functionp get-text-fun) (symbolp get-text-fun))
+        (or (functionp exit-fun) (symbolp exit-fun))
         (symbolp required-feature))
    nil
-   "Invalid amx backend spec: (:name %S :comp-fun %S :get-text-fun %S :exit-fun %S)"
-   (list name comp-fun get-text-fun exit-fun))
+   "Invalid amx backend spec: (:name %S :comp-fun %S :get-text-fun %S :exit-fun %S :required-feature %S)"
+   (list name comp-fun get-text-fun exit-fun required-feature))
   (let ((backend
          (make-amx-backend :name name
                            :comp-fun comp-fun
