@@ -566,6 +566,7 @@ May not work for things like ido and ivy."
             :history 'extended-command-history
             :initial-input initial-input
             :preselect def
+            :require-match t
             :caller 'amx-completing-read-ivy))
 
 (defun amx-ivy-get-text ()
