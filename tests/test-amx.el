@@ -227,7 +227,7 @@ equal."
            :to-equal "ignore")
           (expect 'ivy-read
                   :to-have-been-called)))
-    (xdescribe "ivy-backend"))
+    (xdescribe "ivy-backend is not available for testing"))
 
   (if (locate-library "helm")
       (describe "helm backend"
@@ -251,7 +251,7 @@ equal."
            :to-equal "ignore")
           (expect 'helm-comp-read
                   :to-have-been-called)))
-    (xdescribe "helm-backend"))
+    (xdescribe "helm-backend is not available for testing"))
 
   (if (and (locate-library "ido-completing-read+")
            (locate-library "ivy")
@@ -302,7 +302,7 @@ equal."
           (amx-completing-read '("ignore"))
           (expect 'helm-comp-read
                   :to-have-been-called)))
-    (xdescribe "auto backend"))
+    (xdescribe "auto backend is not available for testing"))
 
   (describe "with `amx-show-key-bindings'"
 
