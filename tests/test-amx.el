@@ -132,6 +132,14 @@ equal."
      :to-throw)
     (expect
      (customize-set-variable 'amx-backend 'ivy)
+     :to-throw)
+    (expect
+     (customize-set-variable 'amx-backend 'helm)
+     :to-throw))
+
+  (it "should not allow setting an unknown backend"
+    (expect
+     (customize-set-variable 'amx-backend 'this-backend-doesnt-exist)
      :to-throw))
 
   (it "should use the prompt string specified in `amx-prompt-string'"
@@ -185,14 +193,14 @@ equal."
   (describe "ido backend"
 
     (before-each
-      (customize-set-variable 'amx-backend 'ido)
-      (spy-on 'ido-completing-read+ :and-call-through))
+      (customize-set-variable 'amx-backend 'ido))
 
     (it "should load `ido-completing-read+' when selected"
       (customize-set-variable 'amx-backend 'ido)
       (expect (featurep 'ido-completing-read+)))
 
     (it "should call `ido-completing-read+'"
+      (spy-on 'ido-completing-read+ :and-call-through)
       (expect
        (with-simulated-input "ignore RET"
          (amx-completing-read '("ignore")))
@@ -205,13 +213,14 @@ equal."
 
         (before-each
           (customize-set-variable 'amx-backend 'ivy)
-          (spy-on 'ivy-read :and-call-through))
+          )
 
         (it "should load `ivy' when selected"
           (customize-set-variable 'amx-backend 'ivy)
           (expect (featurep 'ivy)))
 
         (it "should call `ivy-read'"
+          (spy-on 'ivy-read :and-call-through)
           (expect
            (with-simulated-input "ignore RET"
              (amx-completing-read '("ignore")))
@@ -220,8 +229,33 @@ equal."
                   :to-have-been-called)))
     (xdescribe "ivy-backend"))
 
+  (if (locate-library "helm")
+      (describe "helm backend"
+
+        (before-each
+          (customize-set-variable 'amx-backend 'helm))
+
+        (it "should load `helm' when selected"
+          (customize-set-variable 'amx-backend 'helm)
+          (expect (featurep 'helm)))
+
+        (it "should call `helm-comp-read'"
+          ;; This is required or else `helm-comp-read-map' won't be
+          ;; found.
+          (require 'helm-mode)
+          ;; `helm-comp-read' doesn't seem to like
+          ;; `with-simulated-input', so we mock it out.
+          (spy-on 'helm-comp-read :and-return-value "ignore")
+          (expect
+           (amx-completing-read '("ignore"))
+           :to-equal "ignore")
+          (expect 'helm-comp-read
+                  :to-have-been-called)))
+    (xdescribe "helm-backend"))
+
   (if (and (locate-library "ido-completing-read+")
-           (locate-library "ivy"))
+           (locate-library "ivy")
+           (locate-library "helm"))
       (describe "auto backend"
 
         (before-each
@@ -229,20 +263,22 @@ equal."
           ;; Pre-load features so we can spy on their functions
           (require 'ido-completing-read+)
           (require 'ivy)
+          (require 'helm)
           ;; Reset all of these modes to their standard values
           ;; before each test
-          (test-save-custom-vars '(ido-mode ivy-mode))
-          ;; Start with both modes off
+          (test-save-custom-vars '(ido-mode ivy-mode helm-mode))
+          ;; Start with all modes off
           (ido-mode 0)
           (ivy-mode 0)
+          (helm-mode 0)
           (cl-loop
            for fun in
-           '(completing-read-default ido-completing-read+ ivy-read)
+           '(completing-read-default ido-completing-read+ ivy-read helm-comp-read)
            do (spy-on fun :and-return-value "ignore")))
 
         ;; Restore the saved value after each test
         (after-each
-          (test-restore-custom-vars '(ido-mode ivy-mode)))
+          (test-restore-custom-vars '(ido-mode ivy-mode helm-mode)))
 
         (it "should normally use standard completion"
           (amx-completing-read '("ignore"))
@@ -259,6 +295,12 @@ equal."
           (ivy-mode 1)
           (amx-completing-read '("ignore"))
           (expect 'ivy-read
+                  :to-have-been-called))
+
+        (it "should use helm completion when `helm-mode' is enabled"
+          (helm-mode 1)
+          (amx-completing-read '("ignore"))
+          (expect 'helm-comp-read
                   :to-have-been-called)))
     (xdescribe "auto backend"))
 
