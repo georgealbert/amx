@@ -1,5 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 
+(require 's)
 (require 'smex)
 (require 'amx)
 (require 'buttercup)
@@ -68,27 +69,26 @@ equal."
   (interactive)
   (message "Ran my-temp-command-2"))
 
+(defvar test-amx-last-choice-list '(UNSET))
+(defvar test-amx-orig-amx-completing-read (symbol-function 'amx-completing-read))
+
 (describe "The amx package"
 
-  :var (last-choice-list
-        orig-amx-completing-read)
-  (before-all
+  :var (orig-amx-completing-read)
+  (before-each
     ;; Wrapper that saves the choice list
-    (setq orig-amx-completing-read (symbol-function 'amx-completing-read))
     (spy-on 'amx-completing-read :and-call-fake
             ;; Save the choices list and then call original
             (cl-function
              (lambda (choices &rest morekeys &key predicate &allow-other-keys)
-               (setq last-choice-list (all-completions "" choices predicate))
-               (apply orig-amx-completing-read choices
+               (setq test-amx-last-choice-list (all-completions "" choices predicate))
+               (apply test-amx-orig-amx-completing-read choices
                       :predicate predicate
-                      morekeys)))))
-
-  ;; Reset all of these variables to their standard values before each
-  ;; test
-  (before-each
+                      morekeys))))
     ;; Suppress messages
     (spy-on 'message)
+    ;; Reset all of these variables to their standard values before
+    ;; each test
     (test-save-custom-vars
      '(amx-mode
        amx-auto-update-interval
@@ -307,7 +307,6 @@ equal."
   (describe "with `amx-show-key-bindings'"
 
     :var (orig-local-map
-          orig-amx-completing-read
           my-key-sequence
           temp-map)
 
@@ -339,13 +338,16 @@ equal."
 
     (it "should show key bindings and update the keybind hash when enabled"
       (with-simulated-input "RET"
-        (amx-read-and-run amx-cache "my-temp-command"))
+        (amx-read-and-run '(my-temp-command) "my-temp-command"))
+
       (expect 'execute-extended-command
               :to-have-been-called-with nil "my-temp-command")
       (expect 'amx-augment-commands-with-keybinds
               :to-have-been-called)
+      (expect 'amx-completing-read :to-have-been-called)
       (expect (cl-some (apply-partially 's-contains? my-key-sequence)
-                       last-choice-list)))
+                       test-amx-last-choice-list)
+              :to-be-truthy))
 
     (it "should allow completion on key bindings"
       (with-simulated-input "RET"
@@ -357,7 +359,7 @@ equal."
       (customize-set-variable 'amx-backend 'standard)
       ;; Should fail with incomplete completion
       (with-simulated-input "my-temp-command TAB RET"
-        (amx-read-and-run amx-cache))
+        (amx-read-and-run '(my-temp-command)))
       (expect 'execute-extended-command
               :to-have-been-called-with nil "my-temp-command"))
 
@@ -371,8 +373,10 @@ equal."
               :not :to-have-been-called)
       (expect 'amx-make-keybind-hash
               :not :to-have-been-called)
+      (expect 'amx-completing-read
+              :to-have-been-called)
       (expect (not (cl-some (apply-partially 's-contains? my-key-sequence)
-                            last-choice-list))))
+                            test-amx-last-choice-list))))
 
     (it "should use `amx-origin-buffer' instead of current buffer when looking up key binds"
       (setq amx-show-key-bindings t)
@@ -384,8 +388,10 @@ equal."
             (amx-read-and-run amx-cache "my-temp-command"))
           (expect 'execute-extended-command
                   :to-have-been-called-with nil "my-temp-command")
+          (expect 'amx-completing-read
+                  :to-have-been-called)
           (expect (not (cl-some (apply-partially 's-contains? my-key-sequence)
-                                last-choice-list))))))
+                                test-amx-last-choice-list))))))
 
     (it "should update the keybind hash after switching buffers"
       (setq amx-show-key-bindings t)
@@ -611,7 +617,10 @@ equal."
                    "\\`my-temp-command-2\\'")
       (with-simulated-input "my-temp-command RET"
         (amx-read-and-run '(my-temp-command my-temp-command-2)))
-      (expect last-choice-list
+      (expect 'amx-completing-read :to-have-been-called)
+      (expect test-amx-last-choice-list
+              :to-contain "my-temp-command")
+      (expect test-amx-last-choice-list
               :not :to-contain "my-temp-command-2"))
 
     (it "should ignore commands matching a function"
@@ -619,7 +628,10 @@ equal."
                    (lambda (cmd) (string= "my-temp-command-2" (format "%s" cmd))))
       (with-simulated-input "my-temp-command RET"
         (amx-read-and-run '(my-temp-command my-temp-command-2)))
-      (expect last-choice-list
+      (expect 'amx-completing-read :to-have-been-called)
+      (expect test-amx-last-choice-list
+              :to-contain "my-temp-command")
+      (expect test-amx-last-choice-list
               :not :to-contain "my-temp-command-2"))
 
     (it "should ignore commands explicitly marked as ignored by `amx-ignore-command'"
@@ -628,7 +640,10 @@ equal."
             (amx-ignore-command "my-temp-command-2")
             (with-simulated-input "my-temp-command RET"
               (amx-read-and-run '(my-temp-command my-temp-command-2)))
-            (expect last-choice-list
+            (expect 'amx-completing-read :to-have-been-called)
+            (expect test-amx-last-choice-list
+                    :to-contain "my-temp-command")
+            (expect test-amx-last-choice-list
                     :not :to-contain "my-temp-command-2"))
         (amx-unignore-command "my-temp-command-2")))
 
