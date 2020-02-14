@@ -55,7 +55,9 @@
 (defvar ido-mode)
 (defvar ido-ubiquitous-mode)
 (defvar ido-completion-map)
+(defvar ido-setup-hook)
 (defvar ido-text)
+(defvar helm-comp-read-map)
 
 (defvar amx-command-count 0
   "Number of commands known to amx.")
@@ -581,6 +583,8 @@ May not work for things like ido and ivy."
  :comp-fun 'amx-completing-read-ivy
  :get-text-fun 'amx-ivy-get-text
  :required-feature 'ivy)
+
+(declare-function helm-comp-read "ext:helm-mode")
 
 (cl-defun amx-completing-read-helm (choices &key initial-input predicate def)
   "Amx backend for helm completion"
