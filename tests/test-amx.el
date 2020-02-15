@@ -11,6 +11,8 @@
 (require 'find-func)
 
 (smex-initialize)
+;; Prevent smex from saving anything
+(defalias 'smex-save-to-file 'ignore)
 
 (defun test-save-custom-vars (vars)
   (cl-loop
