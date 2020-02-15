@@ -27,7 +27,7 @@ before_script:
   # Install Eldev
   - curl -fsSL https://raw.github.com/doublep/eldev/master/webinstall/travis-eldev > x.sh && source ./x.sh
   # Install elisp dependencies
-  - eldev prepare
+  - eldev prepare test
 
 script:
   - travis-wait-enhanced --timeout=3m -- eldev -p -dtT test
