@@ -1,0 +1,13 @@
+;; -*- mode: emacs-lisp; lexical-binding: t; no-byte-compile: t -*-
+
+(eldev-use-package-archive 'gnu)
+(eldev-use-package-archive 'melpa-unstable)
+
+(setq eldev-test-framework 'buttercup)
+
+(eldev-add-extra-dependencies 'test 's)
+(eldev-add-extra-dependencies 'test 'ido-completing-read+)
+(eldev-add-extra-dependencies 'test 'ivy)
+(eldev-add-extra-dependencies 'test 'smex)
+(eldev-add-extra-dependencies 'test 'helm)
+(eldev-add-extra-dependencies 'test 'with-simulated-input)
