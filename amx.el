@@ -142,7 +142,9 @@ Debug info is printed to the *Messages* buffer."
 (defsubst amx--debug-message (format-string &rest args)
   "Send a message prefixed with \"amx\" and the current time.
 
-This has no effect unless `amx-debug-mode' is enabled."
+This has no effect unless `amx-debug-mode' is enabled.
+
+Arguments have the same meaning as in `message'."
   (when amx-debug-mode
     (apply #'message (concat "amx (%s): " format-string)
            (format-time-string "%FT%T.%6N%z") args)))
@@ -150,7 +152,7 @@ This has no effect unless `amx-debug-mode' is enabled."
 (defun amx-set-auto-update-interval (symbol value)
   "Custom setter for `amx-auto-update-interval'.
 
-Arguments are the same as in `set-default'.
+Arguments have the same meaning as in `set-default'.
 
 In addition to setting the variable, this will also set up an
 idle timer to ensure that updates happen when idle."
@@ -193,8 +195,7 @@ the associated feature, if any."
         ;; If the new save file already exists, reinitialize from it
         ;; (but only if amx is already initialized).
         (when (bound-and-true-p amx-initialized)
-          (eval-after-load 'amx
-            (amx-initialize t)))
+          (amx-initialize t))
       ;; If the new save file doesn't exist but the old one does, copy
       ;; the old file to the new location.
       (when (and old-value (file-exists-p old-value))
@@ -272,10 +273,10 @@ or symbol."
     (error "Unrecognized command: %S" cmd))))
 
 (defun amx-get-command-symbol (cmd &optional force)
-  "Return COMMAND-NAME as a symbol, or nil if it is not a command.
+  "Return CMD as a symbol, or nil if it is not a command.
 
-COMMAND-NAME can be a symbol or a string, and will always be
-returned as a symbol (although the returned symbol may be nil).
+CMD can be a symbol or a string, and will always be returned as a
+symbol (although the returned symbol may be nil).
 
 If optional argument FORCE is non-nil, return the symbol even if it
 does not correspond to a defined command."
@@ -334,7 +335,7 @@ provides several extra features."
 This function should only be called if amx completion is already
 running."
   (unless (amx-active)
-    (error "Cannot rerun amx because it is not currently running."))
+    (error "Cannot rerun amx because it is not currently running"))
   (select-window (active-minibuffer-window))
   (message "Re-running amx")
   (let ((new-initial-input
@@ -623,7 +624,7 @@ May not work for things like ido and ivy."
         (amx-load-backend backend)
       (error
        (if (eq backend 'standard)
-           (error "Failed to use standard backend.")
+           (error "Failed to use standard backend")
          (display-warning
           'amx
           (format "Falling back to standard amx backend due to error loading %s backend: %S"
@@ -860,7 +861,7 @@ copy `smex-save-file' to `amx-save-file' and load it."
 ;; Ranking
 
 (defun amx-sorting-rules (command-item other-command-item)
-  "Return true if COMMAND-ITEM should sort before OTHER-COMMAND-ITEM."
+  "Return non-nil if COMMAND-ITEM should sort before OTHER-COMMAND-ITEM."
   (let* ((count        (or (cdr command-item      ) 0))
          (other-count  (or (cdr other-command-item) 0))
          (name         (car command-item))
@@ -874,6 +875,7 @@ copy `smex-save-file' to `amx-save-file' and load it."
                       (string< name other-name))))))) ; 3. Alphabetical order
 
 (defun amx-rank (command)
+  "Update the recently-used ranking for COMMAND."
   (let ((command-item (or (assq command amx-cache)
                           ;; Update caches and try again if not found.
                           (progn (amx-update)
@@ -897,6 +899,10 @@ copy `smex-save-file' to `amx-save-file' and load it."
           (amx-sort-item-at amx-history-length))))))
 
 (defun amx-update-counter (command-item)
+  "Update the run counter for COMMAND-ITEM.
+
+If COMMAND-ITEM already has a counter, it is incremented by 1.
+Otherwise, its counter is initilized to 1."
   (let ((count (cdr command-item)))
     (setcdr command-item
             (if count
