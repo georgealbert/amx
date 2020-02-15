@@ -9,7 +9,7 @@ all: test
 # We run clean-elc before testing because undercover.el doesn't support elc
 # files.
 test: clean
-	cask exec buttercup -L . tests
+	cask exec buttercup -l tests/setup-undercover.el -L . tests
 
 compile: $(ELC_FILES)
 
