@@ -660,15 +660,30 @@ equal."
   (describe "`amx-mode'"
 
     (before-each
+      (spy-on 'amx :and-call-through)
+      (spy-on 'amx-update-and-rerun :and-call-through)
+      (spy-on 'execute-extended-command)
       (amx-mode 1))
 
     (it "should replace M-x when enabled"
       (expect (key-binding [remap execute-extended-command])
-              :to-be 'amx))
+              :to-be 'amx)
+      (let ((binding-for-eec (car (where-is-internal 'execute-extended-command))))
+        (unless binding-for-eec
+          (buttercup-skip "Can't test key remapping unless `execute-extended-command' is bound to a key."))
+        (execute-kbd-macro (vconcat binding-for-eec (kbd "ignore RET")))
+        (expect 'amx :to-have-been-called)
+        (expect 'execute-extended-command :to-have-been-called)))
 
     (it "should not replace M-x when disabled"
       (amx-mode 0)
       (expect (key-binding [remap execute-extended-command])
-              :not :to-be 'amx))))
+              :not :to-be 'amx)
+      (let ((binding-for-eec (car (where-is-internal 'execute-extended-command))))
+        (unless binding-for-eec
+          (buttercup-skip "Can't test key remapping unless `execute-extended-command' is bound to a key."))
+        (execute-kbd-macro (vconcat binding-for-eec (kbd "ignore RET")))
+        (expect 'amx :not :to-have-been-called)
+        (expect 'execute-extended-command :to-have-been-called)))))
 
 ;;; test-amx.el ends here
