@@ -233,116 +233,147 @@ equal."
           (amx-read-and-run '("ignore"))))
       (expect 'amx-ido-get-text :to-have-been-called)))
 
-  (if (locate-library "ivy")
-      (describe "ivy backend"
+  (describe "ivy backend"
+    (if (locate-library "ivy")
+        (progn
 
-        (before-each
-          (customize-set-variable 'amx-backend 'ivy)
-          )
+          (before-each
+            (customize-set-variable 'amx-backend 'ivy))
 
-        (it "should load `ivy' when selected"
-          (customize-set-variable 'amx-backend 'ivy)
-          (expect (featurep 'ivy)))
+          (it "should load `ivy' when selected"
+            (customize-set-variable 'amx-backend 'ivy)
+            (expect (featurep 'ivy)))
 
-        (it "should call `ivy-read'"
-          (spy-on 'ivy-read :and-call-through)
-          (expect
-           (with-simulated-input "ignore RET"
-             (amx-completing-read '("ignore")))
-           :to-equal "ignore")
-          (expect 'ivy-read
-                  :to-have-been-called))
-        (it "should properly exit the minibuffer with custom actions"
-          (spy-on 'where-is)
-          (with-simulated-input "ignore C-h w"
-            (amx-read-and-run '("ignore")))
-          (expect 'where-is :to-have-been-called-with 'ignore))
-        (it "should properly update and rerun"
-          (spy-on 'amx-ivy-get-text :and-call-through)
-          (let ((enable-recursive-minibuffers t))
-            (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
-              (amx-read-and-run '("ignore"))))
-          (expect 'amx-ivy-get-text :to-have-been-called)))
-    (xdescribe "ivy-backend is not available for testing"))
+          (it "should call `ivy-read'"
+            (spy-on 'ivy-read :and-call-through)
+            (expect
+             (with-simulated-input "ignore RET"
+               (amx-completing-read '("ignore")))
+             :to-equal "ignore")
+            (expect 'ivy-read
+                    :to-have-been-called))
+          (it "should properly exit the minibuffer with custom actions"
+            (spy-on 'where-is)
+            (with-simulated-input "ignore C-h w"
+              (amx-read-and-run '("ignore")))
+            (expect 'where-is :to-have-been-called-with 'ignore))
+          (it "should properly update and rerun"
+            (spy-on 'amx-ivy-get-text :and-call-through)
+            (let ((enable-recursive-minibuffers t))
+              (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+                (amx-read-and-run '("ignore"))))
+            (expect 'amx-ivy-get-text :to-have-been-called)))
+      (xit "is not available for testing")))
 
-  (if (locate-library "helm")
-      (describe "helm backend"
+  (describe "helm backend"
+    (if (locate-library "helm")
+        (progn
+          (before-each
+            (customize-set-variable 'amx-backend 'helm))
 
-        (before-each
-          (customize-set-variable 'amx-backend 'helm))
+          (it "should load `helm' when selected"
+            (customize-set-variable 'amx-backend 'helm)
+            (expect (featurep 'helm)))
 
-        (it "should load `helm' when selected"
-          (customize-set-variable 'amx-backend 'helm)
-          (expect (featurep 'helm)))
+          (it "should call `helm-comp-read'"
+            ;; This is required or else `helm-comp-read-map' won't be
+            ;; found.
+            (require 'helm-mode)
+            ;; `helm-comp-read' doesn't seem to like
+            ;; `with-simulated-input', so we mock it out.
+            (spy-on 'helm-comp-read :and-return-value "ignore")
+            (expect
+             (amx-completing-read '("ignore"))
+             :to-equal "ignore")
+            (expect 'helm-comp-read
+                    :to-have-been-called))
+          ;; These can't be tested unless `helm-comp-read' can be made
+          ;; to work with `with-simulated-input'.
+          (xit "should properly exit the minibuffer with custom actions")
+          (xit "should properly update and rerun"))
+      (xit "is not available for testing")))
 
-        (it "should call `helm-comp-read'"
-          ;; This is required or else `helm-comp-read-map' won't be
-          ;; found.
-          (require 'helm-mode)
-          ;; `helm-comp-read' doesn't seem to like
-          ;; `with-simulated-input', so we mock it out.
-          (spy-on 'helm-comp-read :and-return-value "ignore")
-          (expect
-           (amx-completing-read '("ignore"))
-           :to-equal "ignore")
-          (expect 'helm-comp-read
-                  :to-have-been-called))
-        ;; These can't be tested unless `helm-comp-read' can be made
-        ;; to work with `with-simulated-input'.
-        (xit "should properly exit the minibuffer with custom actions")
-        (xit "should properly update and rerun"))
-    (xdescribe "helm-backend is not available for testing"))
+  (describe "selectrum backend"
+    (if (locate-library "selectrum")
+        (progn
+          (before-each
+            (customize-set-variable 'amx-backend 'selectrum))
 
-  (if (and (locate-library "ido-completing-read+")
-           (locate-library "ivy")
-           (locate-library "helm"))
-      (describe "auto backend"
+          (it "should load `selectrum' when selected"
+            (customize-set-variable 'amx-backend 'selectrum)
+            (expect (featurep 'selectrum)))
 
-        (before-each
-          (customize-set-variable 'amx-backend 'auto)
-          ;; Pre-load features so we can spy on their functions
-          (require 'ido-completing-read+)
-          (require 'ivy)
-          (require 'helm)
-          ;; Reset all of these modes to their standard values
-          ;; before each test
-          (test-save-custom-vars '(ido-mode ivy-mode helm-mode))
-          ;; Start with all modes off
-          (ido-mode 0)
-          (ivy-mode 0)
-          (helm-mode 0)
-          (cl-loop
-           for fun in
-           '(completing-read-default ido-completing-read+ ivy-read helm-comp-read)
-           do (spy-on fun :and-return-value "ignore")))
+          (it "should call `selectrum-read'"
+            (spy-on 'selectrum-read :and-call-through)
+            (expect
+             (with-simulated-input "ignore RET"
+               (amx-completing-read '("ignore")))
+             :to-equal "ignore")
+            (expect 'selectrum-read
+                    :to-have-been-called))
+          (it "should properly exit the minibuffer with custom actions"
+            (spy-on 'where-is)
+            (with-simulated-input "ignore C-h w"
+              (amx-read-and-run '("ignore")))
+            (expect 'where-is :to-have-been-called-with 'ignore))
+          (it "should properly update and rerun"
+            (spy-on 'amx-selectrum-get-text :and-call-through)
+            (let ((enable-recursive-minibuffers t))
+              (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+                (amx-read-and-run '("ignore"))))
+            (expect 'amx-selectrum-get-text :to-have-been-called)))
+      (xit "is not available for testing")))
 
-        ;; Restore the saved value after each test
-        (after-each
-          (test-restore-custom-vars '(ido-mode ivy-mode helm-mode)))
+  (describe "auto backend"
+    (if (and (locate-library "ido-completing-read+")
+             (locate-library "ivy")
+             (locate-library "helm"))
+        (progn
+          (before-each
+            (customize-set-variable 'amx-backend 'auto)
+            ;; Pre-load features so we can spy on their functions
+            (require 'ido-completing-read+)
+            (require 'ivy)
+            (require 'helm)
+            ;; Reset all of these modes to their standard values
+            ;; before each test
+            (test-save-custom-vars '(ido-mode ivy-mode helm-mode))
+            ;; Start with all modes off
+            (ido-mode 0)
+            (ivy-mode 0)
+            (helm-mode 0)
+            (cl-loop
+             for fun in
+             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read)
+             do (spy-on fun :and-return-value "ignore")))
 
-        (it "should normally use standard completion"
-          (amx-completing-read '("ignore"))
-          (expect 'completing-read-default
-                  :to-have-been-called))
+          ;; Restore the saved value after each test
+          (after-each
+            (test-restore-custom-vars '(ido-mode ivy-mode helm-mode)))
 
-        (it "should use ido completion when `ido-mode' or `ido-ubiquitous-mode' are enabled"
-          (ido-mode 1)
-          (amx-completing-read '("ignore"))
-          (expect 'ido-completing-read+
-                  :to-have-been-called))
+          (it "should normally use standard completion"
+            (amx-completing-read '("ignore"))
+            (expect 'completing-read-default
+                    :to-have-been-called))
 
-        (it "should use ivy completion when `ivy-mode' is enabled"
-          (ivy-mode 1)
-          (amx-completing-read '("ignore"))
-          (expect 'ivy-read
-                  :to-have-been-called))
+          (it "should use ido completion when `ido-mode' or `ido-ubiquitous-mode' are enabled"
+            (ido-mode 1)
+            (amx-completing-read '("ignore"))
+            (expect 'ido-completing-read+
+                    :to-have-been-called))
 
-        (it "should use helm completion when `helm-mode' is enabled"
-          (helm-mode 1)
-          (amx-completing-read '("ignore"))
-          (expect 'helm-comp-read
-                  :to-have-been-called)))
-    (xdescribe "auto backend is not available for testing"))
+          (it "should use ivy completion when `ivy-mode' is enabled"
+            (ivy-mode 1)
+            (amx-completing-read '("ignore"))
+            (expect 'ivy-read
+                    :to-have-been-called))
+
+          (it "should use helm completion when `helm-mode' is enabled"
+            (helm-mode 1)
+            (amx-completing-read '("ignore"))
+            (expect 'helm-comp-read
+                    :to-have-been-called)))
+      (xit "is not available for testing")))
 
   (describe "with `amx-show-key-bindings'"
 
