@@ -178,11 +178,11 @@ equal."
   (describe "standard backend"
 
     (before-each
-      (customize-set-variable 'amx-backend 'standard)
-      (spy-on 'completing-read-default :and-call-through)
-      (spy-on 'completing-read :and-call-through))
+      (customize-set-variable 'amx-backend 'standard))
 
     (it "should call `completing-read-default' and not `completing-read'"
+      (spy-on 'completing-read-default :and-call-through)
+      (spy-on 'completing-read :and-call-through)
       (expect
        (with-simulated-input "ignore RET"
          (amx-completing-read '("ignore")))
@@ -190,12 +190,24 @@ equal."
       (expect 'completing-read-default
               :to-have-been-called)
       (expect 'completing-read :not
-              :to-have-been-called)))
+              :to-have-been-called))
+    (it "should properly exit the minibuffer with custom actions"
+      (spy-on 'where-is)
+      (with-simulated-input "ignore C-h w"
+        (amx-read-and-run '("ignore")))
+      (expect 'where-is :to-have-been-called-with 'ignore))
+    (it "should properly update and rerun"
+      (spy-on 'amx-default-get-text :and-call-through)
+      (let ((enable-recursive-minibuffers t))
+        (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+          (amx-read-and-run '("ignore"))))
+      (expect 'amx-default-get-text :to-have-been-called)))
 
   (describe "ido backend"
 
     (before-each
-      (customize-set-variable 'amx-backend 'ido))
+      (customize-set-variable 'amx-backend 'ido)
+      (spy-on 'where-is))
 
     (it "should load `ido-completing-read+' when selected"
       (customize-set-variable 'amx-backend 'ido)
@@ -208,7 +220,18 @@ equal."
          (amx-completing-read '("ignore")))
        :to-equal "ignore")
       (expect 'ido-completing-read+
-              :to-have-been-called)))
+              :to-have-been-called))
+    (it "should properly exit the minibuffer with custom actions"
+      (spy-on 'where-is)
+      (with-simulated-input "ignore C-h w"
+        (amx-read-and-run '("ignore")))
+      (expect 'where-is :to-have-been-called-with 'ignore))
+    (it "should properly update and rerun"
+      (spy-on 'amx-ido-get-text :and-call-through)
+      (let ((enable-recursive-minibuffers t))
+        (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+          (amx-read-and-run '("ignore"))))
+      (expect 'amx-ido-get-text :to-have-been-called)))
 
   (if (locate-library "ivy")
       (describe "ivy backend"
@@ -228,7 +251,18 @@ equal."
              (amx-completing-read '("ignore")))
            :to-equal "ignore")
           (expect 'ivy-read
-                  :to-have-been-called)))
+                  :to-have-been-called))
+        (it "should properly exit the minibuffer with custom actions"
+          (spy-on 'where-is)
+          (with-simulated-input "ignore C-h w"
+            (amx-read-and-run '("ignore")))
+          (expect 'where-is :to-have-been-called-with 'ignore))
+        (it "should properly update and rerun"
+          (spy-on 'amx-ivy-get-text :and-call-through)
+          (let ((enable-recursive-minibuffers t))
+            (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+              (amx-read-and-run '("ignore"))))
+          (expect 'amx-ivy-get-text :to-have-been-called)))
     (xdescribe "ivy-backend is not available for testing"))
 
   (if (locate-library "helm")
@@ -252,7 +286,11 @@ equal."
            (amx-completing-read '("ignore"))
            :to-equal "ignore")
           (expect 'helm-comp-read
-                  :to-have-been-called)))
+                  :to-have-been-called))
+        ;; These can't be tested unless `helm-comp-read' can be made
+        ;; to work with `with-simulated-input'.
+        (xit "should properly exit the minibuffer with custom actions")
+        (xit "should properly update and rerun"))
     (xdescribe "helm-backend is not available for testing"))
 
   (if (and (locate-library "ido-completing-read+")
