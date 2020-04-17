@@ -109,7 +109,8 @@ If nil, a `amx-update' is needed ASAP.")
   required-feature
   comp-fun
   get-text-fun
-  exit-fun)
+  exit-fun
+  auto-activate)
 
 (defgroup amx nil
   "M-x interface with Ido-style fuzzy matching and ranking heuristics."
@@ -477,7 +478,28 @@ minibuffer."
 (cl-defun amx-define-backend (&key name comp-fun
                                    (get-text-fun 'amx-default-get-text)
                                    (exit-fun 'amx-default-exit-minibuffer)
-                                   required-feature)
+                                   required-feature
+                                   auto-activate)
+  "Define a new backend for `amx'.
+
+A backend must be defined with at least a `:name' and a
+`:comp-fun', which is the function to call to do completion. The
+`:comp-fun' must accept the same arguments as
+`amx-completing-read-default'.
+
+Additionally, a backend muse declare a `:get-text-fun', unless
+`amx-default-get-text' is sufficient to get the user's currently
+entered text for the backend. Similarly, if pressing RET is not
+the correct way to exit the minibuffer with the currently
+selected text or item when using the backend, it must declare an
+`:exit-fun' that does so.
+
+If the backend needs to load a feature in order to be used, it
+must declare that feature using `:required-feature'. If there is
+a condition under which the backend should automatically be
+activated, that should be declared as `:auto-activate'. If the
+condition evaluates to non-nil, the auto backend will automatically
+choose the backend."
   (cl-assert
    (and (symbolp name) name
         ;; Unfortunately we can't rely on these to be defined as
@@ -488,14 +510,15 @@ minibuffer."
         (or (functionp exit-fun) (symbolp exit-fun))
         (symbolp required-feature))
    nil
-   "Invalid amx backend spec: (:name %S :comp-fun %S :get-text-fun %S :exit-fun %S :required-feature %S)"
-   (list name comp-fun get-text-fun exit-fun required-feature))
+   "Invalid amx backend spec: (:name %S :comp-fun %S :get-text-fun %S :exit-fun %S :required-feature %S :auto-activate %S)"
+   (list name comp-fun get-text-fun exit-fun required-feature auto-activate))
   (let ((backend
          (make-amx-backend :name name
                            :comp-fun comp-fun
                            :get-text-fun get-text-fun
                            :exit-fun exit-fun
-                           :required-feature required-feature)))
+                           :required-feature required-feature
+                           :auto-activate auto-activate)))
     (setq amx-known-backends
           (plist-put amx-known-backends name backend))))
 
@@ -559,7 +582,9 @@ May not work for things like ido and ivy."
  :name 'ido
  :comp-fun 'amx-completing-read-ido
  :get-text-fun 'amx-ido-get-text
- :required-feature 'ido-completing-read+)
+ :required-feature 'ido-completing-read+
+ :auto-activate '(or (bound-and-true-p ido-mode)
+                     (bound-and-true-p ido-ubiquitous-mode)))
 
 (declare-function ivy-read "ext:ivy")
 
@@ -583,7 +608,8 @@ May not work for things like ido and ivy."
  :name 'ivy
  :comp-fun 'amx-completing-read-ivy
  :get-text-fun 'amx-ivy-get-text
- :required-feature 'ivy)
+ :required-feature 'ivy
+ :auto-activate '(bound-and-true-p ivy-mode))
 
 (declare-function helm-comp-read "ext:helm-mode")
 
@@ -607,7 +633,8 @@ May not work for things like ido and ivy."
  :comp-fun 'amx-completing-read-helm
  :get-text-fun 'amx-default-get-text
  :exit-fun 'helm-confirm-and-exit-minibuffer
- :required-feature 'helm)
+ :required-feature 'helm
+ :auto-activate '(bound-and-true-p helm-mode))
 
 (declare-function selectrum-read "ext:selectrum")
 (declare-function selectrum--normalize-collection "ext:selectrum")
@@ -637,20 +664,32 @@ May not work for things like ido and ivy."
  :name 'selectrum
  :comp-fun 'amx-completing-read-selectrum
  :get-text-fun 'amx-selectrum-get-text
- :required-feature 'selectrum)
+ :required-feature 'selectrum
+ :auto-activate '(bound-and-true-p selectrum-mode))
+
+(defsubst amx-auto-select-backend ()
+  (cl-loop for (bname b) on amx-known-backends by 'cddr
+         ;; Don't auto-select the auto backend, or the
+         ;; default backend.
+         unless (memq bname '(auto standard))
+         ;; Auto-select a backend if its auto-activate
+         ;; condition evaluates to non-nil.
+         if (ignore-errors (eval (amx-backend-auto-activate b)))
+         return b
+         ;; If no backend's auto-activate condition is
+         ;; fulfilled, auto-select the standard backend.
+         finally return 'standard))
 
 (cl-defun amx-completing-read-auto (choices &key initial-input predicate def)
-  "Automatically select the appropriate completion system for M-x."
-  (let ((backend
-         (cond
-          ((bound-and-true-p ivy-mode) 'ivy)
-          ((or (bound-and-true-p ido-mode)
-               (bound-and-true-p ido-ubiquitous-mode))
-           'ido)
-          ((bound-and-true-p helm-mode) 'helm)
-          ((bound-and-true-p selectrum-mode) 'selectrum)
-          (t 'standard))))
-    (amx--debug-message "Auto-selected backend `%s'" backend)
+  "Automatically select the appropriate completion system for M-x.
+
+This iterates through the `:auto-activate' declarations of each
+backend until it finds one that evaluates to non-nil, and uses that
+backend."
+  (let ((backend (amx-auto-select-backend)))
+    (amx--debug-message "Auto-selected backend `%s'"
+                        (if (symbolp backend) backend
+                          (amx-backend-name backend)))
     (condition-case err
         (amx-load-backend backend)
       (error
