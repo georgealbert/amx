@@ -227,7 +227,7 @@ nil) if you don't find it useful."
   :type 'string)
 
 (defcustom amx-ignored-command-matchers
-  '("self-insert-command"
+  '("\\`self-insert-command\\'"
     "\\`self-insert-and-exit\\'"
     "\\`ad-Orig-"
     "\\`menu-bar"
