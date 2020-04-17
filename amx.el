@@ -648,6 +648,7 @@ May not work for things like ido and ivy."
                (bound-and-true-p ido-ubiquitous-mode))
            'ido)
           ((bound-and-true-p helm-mode) 'helm)
+          ((bound-and-true-p selectrum-mode) 'selectrum)
           (t 'standard))))
     (amx--debug-message "Auto-selected backend `%s'" backend)
     (condition-case err

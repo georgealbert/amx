@@ -327,7 +327,8 @@ equal."
   (describe "auto backend"
     (if (and (locate-library "ido-completing-read+")
              (locate-library "ivy")
-             (locate-library "helm"))
+             (locate-library "helm")
+             (locate-library "selectrum"))
         (progn
           (before-each
             (customize-set-variable 'amx-backend 'auto)
@@ -335,21 +336,23 @@ equal."
             (require 'ido-completing-read+)
             (require 'ivy)
             (require 'helm)
+            (require 'selectrum)
             ;; Reset all of these modes to their standard values
             ;; before each test
-            (test-save-custom-vars '(ido-mode ivy-mode helm-mode))
+            (test-save-custom-vars '(ido-mode ivy-mode helm-mode selectrum-mode))
             ;; Start with all modes off
             (ido-mode 0)
             (ivy-mode 0)
             (helm-mode 0)
+            (selectrum-mode 0)
             (cl-loop
              for fun in
-             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read)
+             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read selectrum-read)
              do (spy-on fun :and-return-value "ignore")))
 
           ;; Restore the saved value after each test
           (after-each
-            (test-restore-custom-vars '(ido-mode ivy-mode helm-mode)))
+            (test-restore-custom-vars '(ido-mode ivy-mode helm-mode selectrum-mode)))
 
           (it "should normally use standard completion"
             (amx-completing-read '("ignore"))
@@ -372,6 +375,12 @@ equal."
             (helm-mode 1)
             (amx-completing-read '("ignore"))
             (expect 'helm-comp-read
+                    :to-have-been-called))
+
+          (it "should use selectrum completion when `selectrum-mode' is enabled"
+            (selectrum-mode 1)
+            (amx-completing-read '("ignore"))
+            (expect 'selectrum-read
                     :to-have-been-called)))
       (xit "is not available for testing")))
 
