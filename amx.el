@@ -296,9 +296,10 @@ does not correspond to a defined command."
    (t
     (error "Unrecognized command: %S" cmd))))
 
-(defun amx-get-default (choices)
+(defun amx-get-default (choices &optional bind-hash)
   "Get the first non-ignored entry from CHOICES as a string."
   (cl-loop
+   with bind-hash = (or bind-hash amx-command-keybind-hash)
    for choice in
    (if (listp choices)
        choices
