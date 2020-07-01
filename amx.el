@@ -307,7 +307,7 @@ does not correspond to a defined command."
      (all-completions "" choices))
    for cmd = (amx-get-command-name choice)
    if (not (amx-command-ignored-p cmd))
-   return (amx-augment-command-with-keybind (format "%s" cmd))
+   return (amx-augment-command-with-keybind (format "%s" cmd) bind-hash)
    finally return nil))
 
 ;;--------------------------------------------------------------------------------
