@@ -118,6 +118,10 @@ If nil, a `amx-update' is needed ASAP.")
   :group 'convenience
   :link '(emacs-library-link :tag "Lisp File" "amx.el"))
 
+(defface helm-M-x-key '((t (:foreground "orange" :underline t)))
+  "Face used in helm-M-x to show keybinding."
+  :group 'helm-command-faces)
+
 ;;;###autoload
 (define-minor-mode amx-mode
   ;; TODO Update all references to ido
@@ -622,7 +626,7 @@ May not work for things like ido and ivy."
                   :initial-input initial-input
                   :test predicate
                   :default def
-                  :name "Helm M-x Completions"
+                  :name "Helm M-x Completions - amx"
                   :buffer "Helm M-x Completions"
                   :history extended-command-history
                   :reverse-history t
@@ -1080,7 +1084,9 @@ found for COMMAND, the command's name is returned alone."
          (cmdsym (intern cmdname))
          (keybind (and bind-hash (gethash cmdsym bind-hash))))
     (if (and keybind (not (amx-command-ignored-p cmdsym)))
-        (format "%s (%s)" cmdname keybind)
+        (format "%s (%s)" cmdname (propertize
+                                   keybind
+                                   'face 'helm-M-x-key))
       cmdname)))
 
 (defun amx-augment-commands-with-keybinds
