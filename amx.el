@@ -185,10 +185,7 @@ periodic updates will be performed."
 (defun amx-set-save-file (symbol value)
   "Custom setter for `amx-save-file'.
 
-Arguments are the same as in `set-default'.
-
-This function will refuse to set the backend unless it can load
-the associated feature, if any."
+Arguments are the same as in `set-default'."
   (cl-assert (eq symbol 'amx-save-file))
   (let ((old-value (when (boundp symbol) (symbol-value symbol))))
     (set-default symbol value)
@@ -198,14 +195,21 @@ the associated feature, if any."
         (when (bound-and-true-p amx-initialized)
           (amx-initialize t))
       ;; If the new save file doesn't exist but the old one does, copy
-      ;; the old file to the new location.
+      ;; the old file to the new location. In this case we don't need
+      ;; to re-initialize, because the contents of the file have not
+      ;; changed.
       (when (and old-value (file-exists-p old-value))
         (copy-file old-value value)))))
 
 (defcustom amx-save-file (locate-user-emacs-file "amx-items" ".amx-items")
   "File in which the amx state is saved between Emacs sessions.
 
-Variables stored are: `amx-data', `amx-history'."
+Variables stored are: `amx-data', `amx-history'.
+
+When changing this variable through Custom, amx will check for an
+already-existing file at the new path. If it exists, amx will
+re-initialize using this file. Otherwise, it will copy the
+current save file from the old location to the new one."
   :type '(choice (string :tag "File name")
                  (const :tag "Don't save" nil))
   :set #'amx-set-save-file)
