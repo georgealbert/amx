@@ -631,6 +631,8 @@ May not work for things like ido and ivy."
                   :history extended-command-history
                   :reverse-history t
                   :must-match t
+                  :fuzzy (or (bound-and-true-p helm-mode-fuzzy-match)
+                             (bound-and-true-p helm-M-x-fuzzy-match))
                   :keymap (make-composed-keymap amx-map helm-comp-read-map)))
 
 (amx-define-backend
