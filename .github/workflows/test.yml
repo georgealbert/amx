@@ -22,8 +22,8 @@ jobs:
           - 25.3
           - 25.2
           - 25.1
-          - 24.5
-          - 24.4
+          # - 24.5
+          # - 24.4
           - snapshot
     env:
       # We only generate a coverage report for one Emacs version
