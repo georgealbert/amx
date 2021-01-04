@@ -1,7 +1,6 @@
 # Amx, an alternative interface for M-x in Emacs
 
-[![Build Status](https://travis-ci.org/DarwinAwardWinner/amx.svg?branch=master)](https://travis-ci.org/DarwinAwardWinner/amx)
-[![MELPA](http://melpa.org/packages/amx-badge.svg)](http://melpa.org/#/amx)
+[![MELPA](http://melpa.org/packages/amx-badge.svg)](http://melpa.org/#/amx) [![Build Status](https://github.com/DarwinAwardWinner/amx/workflows/CI/badge.svg?branch=master)](https://github.com/DarwinAwardWinner/amx/actions?query=workflow%3ACI+branch%3Amaster)
 
 Amx is an alternative interface for `M-x` in Emacs. It provides
 several enhancements over the ordinary `execute-extended-command`,
