@@ -10,7 +10,7 @@
 ;; URL: http://github.com/DarwinAwardWinner/amx/
 ;; Package-Requires: ((emacs "24.4") (s "0"))
 ;; Version: 3.3
-;; Keywords: convenience, usability
+;; Keywords: convenience, usability, completion
 
 ;; This file is not part of GNU Emacs.
 
@@ -492,7 +492,7 @@ A backend must be defined with at least a `:name' and a
 `:comp-fun' must accept the same arguments as
 `amx-completing-read-default'.
 
-Additionally, a backend muse declare a `:get-text-fun', unless
+Additionally, a backend must declare a `:get-text-fun', unless
 `amx-default-get-text' is sufficient to get the user's currently
 entered text for the backend. Similarly, if pressing RET is not
 the correct way to exit the minibuffer with the currently
@@ -535,7 +535,7 @@ choose the backend."
    (t (error "Unknown amx backed %S" backend))))
 
 (cl-defun amx-completing-read-default (choices &key initial-input predicate def)
-  "Amx backend for default Emacs completion"
+  "Amx backend for default Emacs completion."
   (amx--debug-message "Preparing default-style completion")
   (require 'minibuf-eldef)
   (let ((minibuffer-completion-table choices)
@@ -571,7 +571,7 @@ May not work for things like ido and ivy."
 (declare-function ido-completing-read+ "ext:ido-completing-read+")
 
 (cl-defun amx-completing-read-ido (choices &key initial-input predicate def)
-  "Amx backend for ido completion"
+  "Amx backend for ido completion."
   (require 'ido-completing-read+)
   (let ((ido-completion-map ido-completion-map)
         (ido-setup-hook (cons 'amx-prepare-ido-bindings ido-setup-hook))
@@ -594,7 +594,7 @@ May not work for things like ido and ivy."
 (declare-function ivy-read "ext:ivy")
 
 (cl-defun amx-completing-read-ivy (choices &key initial-input predicate def)
-  "Amx backend for ivy completion"
+  "Amx backend for ivy completion."
   (require 'ivy)
   (ivy-read (amx-prompt-with-prefix-arg) choices
             :predicate predicate
@@ -619,7 +619,7 @@ May not work for things like ido and ivy."
 (declare-function helm-comp-read "ext:helm-mode")
 
 (cl-defun amx-completing-read-helm (choices &key initial-input predicate def)
-  "Amx backend for helm completion"
+  "Amx backend for helm completion."
   (require 'helm-config)
   (require 'helm-mode)                  ; Provides `helm-comp-read-map'
   (helm-comp-read (amx-prompt-with-prefix-arg) choices
