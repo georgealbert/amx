@@ -643,34 +643,28 @@ May not work for things like ido and ivy."
  :required-feature 'helm
  :auto-activate '(bound-and-true-p helm-mode))
 
-(declare-function selectrum-read "ext:selectrum")
-(declare-function selectrum--normalize-collection "ext:selectrum")
-(defvar selectrum-should-sort-p)
-(defvar selectrum--previous-input-string)
+(declare-function selectrum-completing-read "ext:selectrum")
+(defvar selectrum-should-sort)
 
 (cl-defun amx-completing-read-selectrum (choices &key initial-input predicate def)
   "Amx backend for selectrum completion."
-  (let ((choices (cl-remove-if-not (or predicate #'identity)
-                                   choices))
-        (selectrum-should-sort-p nil))
-    (minibuffer-with-setup-hook
-        (lambda ()
-          (use-local-map (make-composed-keymap
-                          (list amx-map (current-local-map)))))
-      (selectrum-read (amx-prompt-with-prefix-arg)
-                      (selectrum--normalize-collection choices)
-                      :history 'extended-command-history
-                      :require-match t
-                      :default-candidate def
-                      :initial-input initial-input))))
-
-(defun amx-selectrum-get-text ()
-  selectrum--previous-input-string)
+  (minibuffer-with-setup-hook
+      (lambda ()
+        (setq-local selectrum-should-sort nil)
+        (use-local-map (make-composed-keymap
+                        (list amx-map (current-local-map)))))
+    (selectrum-completing-read (amx-prompt-with-prefix-arg)
+                               choices
+                               predicate
+                               t
+                               initial-input
+                               'extended-command-history
+                               def)))
 
 (amx-define-backend
  :name 'selectrum
  :comp-fun 'amx-completing-read-selectrum
- :get-text-fun 'amx-selectrum-get-text
+ :get-text-fun 'amx-default-get-text
  :required-feature 'selectrum
  :auto-activate '(bound-and-true-p selectrum-mode))
 
