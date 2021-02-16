@@ -304,12 +304,12 @@ equal."
             (expect (featurep 'selectrum)))
 
           (it "should call `selectrum-read'"
-            (spy-on 'selectrum-read :and-call-through)
+            (spy-on 'selectrum-completing-read :and-call-through)
             (expect
              (with-simulated-input "ignore RET"
                (amx-completing-read '("ignore")))
              :to-equal "ignore")
-            (expect 'selectrum-read
+            (expect 'selectrum-completing-read
                     :to-have-been-called))
           (it "should properly exit the minibuffer with custom actions"
             (spy-on 'where-is)
@@ -317,11 +317,11 @@ equal."
               (amx-read-and-run '("ignore")))
             (expect 'where-is :to-have-been-called-with 'ignore))
           (it "should properly update and rerun"
-            (spy-on 'amx-selectrum-get-text :and-call-through)
+            (spy-on 'amx-default-get-text :and-call-through)
             (let ((enable-recursive-minibuffers t))
               (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
                 (amx-read-and-run '("ignore"))))
-            (expect 'amx-selectrum-get-text :to-have-been-called)))
+            (expect 'amx-default-get-text :to-have-been-called)))
       (xit "is not available for testing")))
 
   (describe "auto backend"
@@ -347,7 +347,7 @@ equal."
             (selectrum-mode 0)
             (cl-loop
              for fun in
-             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read selectrum-read)
+             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read selectrum-completing-read)
              do (spy-on fun :and-return-value "ignore")))
 
           ;; Restore the saved value after each test
@@ -380,7 +380,7 @@ equal."
           (it "should use selectrum completion when `selectrum-mode' is enabled"
             (selectrum-mode 1)
             (amx-completing-read '("ignore"))
-            (expect 'selectrum-read
+            (expect 'selectrum-completing-read
                     :to-have-been-called)))
       (xit "is not available for testing")))
 
