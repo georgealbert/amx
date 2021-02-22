@@ -645,12 +645,14 @@ May not work for things like ido and ivy."
 
 (declare-function selectrum-completing-read "ext:selectrum")
 (defvar selectrum-should-sort)
+(defvar selectrum-should-sort-p)
 
 (cl-defun amx-completing-read-selectrum (choices &key initial-input predicate def)
   "Amx backend for selectrum completion."
   (minibuffer-with-setup-hook
       (lambda ()
         (setq-local selectrum-should-sort nil)
+        (setq-local selectrum-should-sort-p nil)
         (use-local-map (make-composed-keymap
                         (list amx-map (current-local-map)))))
     (selectrum-completing-read (amx-prompt-with-prefix-arg)
