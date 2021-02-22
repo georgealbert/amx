@@ -652,6 +652,8 @@ May not work for things like ido and ivy."
   (minibuffer-with-setup-hook
       (lambda ()
         (setq-local selectrum-should-sort nil)
+        ;; FIXME: This should be removed after it can be assumed all amx users
+        ;; updated also Selectrum.
         (setq-local selectrum-should-sort-p nil)
         (use-local-map (make-composed-keymap
                         (list amx-map (current-local-map)))))
