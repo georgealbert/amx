@@ -652,18 +652,18 @@ May not work for things like ido and ivy."
   (minibuffer-with-setup-hook
       (lambda ()
         (setq-local selectrum-should-sort nil)
-        ;; FIXME: This should be removed after it can be assumed all amx users
-        ;; updated also Selectrum.
-        (setq-local selectrum-should-sort-p nil)
         (use-local-map (make-composed-keymap
                         (list amx-map (current-local-map)))))
-    (selectrum-completing-read (amx-prompt-with-prefix-arg)
-                               choices
-                               predicate
-                               t
-                               initial-input
-                               'extended-command-history
-                               def)))
+    ;; FIXME: `selectrum-should-sort-p' should be removed after it can be
+    ;; assumed all amx users updated also Selectrum.
+    (let ((selectrum-should-sort-p nil))
+      (selectrum-completing-read (amx-prompt-with-prefix-arg)
+                                 choices
+                                 predicate
+                                 t
+                                 initial-input
+                                 'extended-command-history
+                                 def))))
 
 (amx-define-backend
  :name 'selectrum
