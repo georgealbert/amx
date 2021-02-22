@@ -755,6 +755,7 @@ By default, an appropriate method is selected based on whether
           (const :tag "Ido" ido)
           (const :tag "Ivy" ivy)
           (const :tag "Helm" helm)
+          (const :tag "Selectrum" selectrum)
           (const :tag "Standard" standard)
           (symbol :tag "Custom backend"))
   :set #'amx-set-backend)
