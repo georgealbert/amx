@@ -36,13 +36,14 @@ the mode.
 
 ### Completion backends
 
-Amx currently supports 3 different completion backends: standard Emacs
-completion, Ido completion, and ivy completion. By default, Amx
-automatically detects when `ido-mode` or `ivy-mode` are enabled, and
-uses the appropriate backend. So you should generally get the same
-kind of completion that you're already used to. However, you can also
-force Amx to use a specific completion system by customizing the
-variable `amx-backend`.
+Amx currently supports several different completion backends,
+including standard Emacs completion, Ido completion, Ivy completion,
+and others. By default, Amx tries to automatically detect which
+completion system you are using and match your settings. For example,
+it will use ido completion `ido-mode` is enabled. So you should
+generally get the same kind of completion that you're already used to.
+However, you can also force Amx to use a specific completion system by
+customizing the variable `amx-backend`.
 
 ### Showing keyboard shortcuts for commands
 

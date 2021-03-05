@@ -745,13 +745,11 @@ the associated feature, if any."
   (set-default symbol value))
 
 (defcustom amx-backend 'auto
-  "Completion function to select a candidate from a list of strings.
+  "Completion backend used by amx.
 
-This function should take the same arguments as
-`amx-completing-read': CHOICES and INITIAL-INPUT.
-
-By default, an appropriate method is selected based on whether
-`ivy-mode' or `ido-mode' is enabled."
+This should be the name of backend defined using
+`amx-define-backend', such as `ido' or `ivy', or the symbol
+`auto' to have amx select a backend automatically."
   :type '(choice
           (const :tag "Auto-select" auto)
           (const :tag "Ido" ido)
