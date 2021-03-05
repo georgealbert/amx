@@ -643,34 +643,32 @@ May not work for things like ido and ivy."
  :required-feature 'helm
  :auto-activate '(bound-and-true-p helm-mode))
 
-(declare-function selectrum-read "ext:selectrum")
-(declare-function selectrum--normalize-collection "ext:selectrum")
+(declare-function selectrum-completing-read "ext:selectrum")
+(defvar selectrum-should-sort)
 (defvar selectrum-should-sort-p)
-(defvar selectrum--previous-input-string)
 
 (cl-defun amx-completing-read-selectrum (choices &key initial-input predicate def)
   "Amx backend for selectrum completion."
-  (let ((choices (cl-remove-if-not (or predicate #'identity)
-                                   choices))
-        (selectrum-should-sort-p nil))
-    (minibuffer-with-setup-hook
-        (lambda ()
-          (use-local-map (make-composed-keymap
-                          (list amx-map (current-local-map)))))
-      (selectrum-read (amx-prompt-with-prefix-arg)
-                      (selectrum--normalize-collection choices)
-                      :history 'extended-command-history
-                      :require-match t
-                      :default-candidate def
-                      :initial-input initial-input))))
-
-(defun amx-selectrum-get-text ()
-  selectrum--previous-input-string)
+  (minibuffer-with-setup-hook
+      (lambda ()
+        (setq-local selectrum-should-sort nil)
+        (use-local-map (make-composed-keymap
+                        (list amx-map (current-local-map)))))
+    ;; FIXME: `selectrum-should-sort-p' should be removed after it can be
+    ;; assumed all amx users updated also Selectrum.
+    (let ((selectrum-should-sort-p nil))
+      (selectrum-completing-read (amx-prompt-with-prefix-arg)
+                                 choices
+                                 predicate
+                                 t
+                                 initial-input
+                                 'extended-command-history
+                                 def))))
 
 (amx-define-backend
  :name 'selectrum
  :comp-fun 'amx-completing-read-selectrum
- :get-text-fun 'amx-selectrum-get-text
+ :get-text-fun 'amx-default-get-text
  :required-feature 'selectrum
  :auto-activate '(bound-and-true-p selectrum-mode))
 
@@ -755,6 +753,7 @@ This should be the name of backend defined using
           (const :tag "Ido" ido)
           (const :tag "Ivy" ivy)
           (const :tag "Helm" helm)
+          (const :tag "Selectrum" selectrum)
           (const :tag "Standard" standard)
           (symbol :tag "Custom backend"))
   :set #'amx-set-backend)
