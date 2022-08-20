@@ -628,7 +628,7 @@ May not work for things like ido and ivy."
                   :default def
                   :name "Helm M-x Completions"
                   :buffer "Helm M-x Completions"
-                  :history extended-command-history
+                  :history 'extended-command-history
                   :reverse-history t
                   :must-match t
                   :fuzzy (or (bound-and-true-p helm-mode-fuzzy-match)
