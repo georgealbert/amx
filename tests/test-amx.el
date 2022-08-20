@@ -149,8 +149,8 @@ equal."
     (let (observed-prompt)
       (expect
        (with-simulated-input
-           '((setq observed-prompt (buffer-substring (point-min) (point)))
-             "ignore RET")
+           ((setq observed-prompt (buffer-substring (point-min) (point)))
+            "ignore RET")
          (amx-completing-read '("ignore")))
        :to-equal "ignore")
       (expect observed-prompt
@@ -199,7 +199,7 @@ equal."
     (it "should properly update and rerun"
       (spy-on 'amx-default-get-text :and-call-through)
       (let ((enable-recursive-minibuffers t))
-        (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+        (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
           (amx-read-and-run '("ignore"))))
       (expect 'amx-default-get-text :to-have-been-called)))
 
@@ -229,7 +229,7 @@ equal."
     (it "should properly update and rerun"
       (spy-on 'amx-ido-get-text :and-call-through)
       (let ((enable-recursive-minibuffers t))
-        (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+        (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
           (amx-read-and-run '("ignore"))))
       (expect 'amx-ido-get-text :to-have-been-called)))
 
@@ -260,7 +260,7 @@ equal."
           (it "should properly update and rerun"
             (spy-on 'amx-ivy-get-text :and-call-through)
             (let ((enable-recursive-minibuffers t))
-              (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+              (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
                 (amx-read-and-run '("ignore"))))
             (expect 'amx-ivy-get-text :to-have-been-called)))
       (xit "is not available for testing")))
@@ -319,7 +319,7 @@ equal."
           (it "should properly update and rerun"
             (spy-on 'amx-default-get-text :and-call-through)
             (let ((enable-recursive-minibuffers t))
-              (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+              (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
                 (amx-read-and-run '("ignore"))))
             (expect 'amx-default-get-text :to-have-been-called)))
       (xit "is not available for testing")))
