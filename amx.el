@@ -236,6 +236,7 @@ nil) if you don't find it useful."
     "\\`self-insert-and-exit\\'"
     "\\`ad-Orig-"
     "\\`menu-bar"
+    "\\`kill-emacs\\'"
     amx-command-marked-ignored-p
     amx-command-obsolete-p
     amx-command-mouse-interactive-p)
