@@ -684,7 +684,36 @@ equal."
           (expect amx-history
                   :to-equal saved-amx-history)
           (expect amx-data
-                  :to-equal saved-amx-data)))))
+                  :to-equal saved-amx-data))))
+    (it "should correctly restore even unknown commands from history"
+      (customize-set-variable
+       'amx-save-file
+       (make-temp-name
+        (expand-file-name "amx-items-temp-"
+                          temporary-file-directory)))
+      ;; Define a command
+      (defun amx-test-my-special-command ()
+        (interactive)
+        (message "Ran my special command!"))
+      ;; Ensure that amx knows about the command, and make it think
+      ;; the command has never been called before
+      (amx-update)
+      (setcdr (assq 'amx-test-my-special-command amx-cache) nil)
+      ;; Call the command a few times to get it into the amx history
+      (dotimes (i 3)
+        (with-simulated-input "amx-test-my-special-command RET"
+          (amx-read-and-run amx-cache)))
+      ;; Save the amx history with my-special-command in it
+      (amx-save-to-file)
+      ;; Now make the command no longer defined
+      (fmakunbound 'amx-test-my-special-command)
+      ;; Now force a re-read of history from file
+      (amx-initialize t)
+      ;; Should be in history
+      (expect amx-history :to-contain 'amx-test-my-special-command)
+      ;; Should be in data and cache
+      (expect (cdr (assq 'amx-test-my-special-command amx-data)) :to-equal 3)
+      (expect (cdr (assq 'amx-test-my-special-command amx-cache)) :to-equal 3)))
 
   (describe "with `amx-ignored-command-matchers'"
 

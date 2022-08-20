@@ -769,10 +769,10 @@ This should be the name of backend defined using
   ;; This speeds up sorting.
   (let (new-commands)
     (mapatoms (lambda (symbol)
-                (when (commandp symbol)
-                  (let ((known-command (assq symbol amx-data)))
-                    (if known-command
-                        (setq amx-cache (cons known-command amx-cache))
+                (let ((known-command (assq symbol amx-data)))
+                  (if known-command
+                      (setq amx-cache (cons known-command amx-cache))
+                    (when (commandp symbol)
                       (setq new-commands (cons (list symbol) new-commands)))))))
     (if (eq (length amx-cache) 0)
         (setq amx-cache new-commands)
