@@ -149,8 +149,8 @@ equal."
     (let (observed-prompt)
       (expect
        (with-simulated-input
-           '((setq observed-prompt (buffer-substring (point-min) (point)))
-             "ignore RET")
+           ((setq observed-prompt (buffer-substring (point-min) (point)))
+            "ignore RET")
          (amx-completing-read '("ignore")))
        :to-equal "ignore")
       (expect observed-prompt
@@ -199,7 +199,7 @@ equal."
     (it "should properly update and rerun"
       (spy-on 'amx-default-get-text :and-call-through)
       (let ((enable-recursive-minibuffers t))
-        (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+        (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
           (amx-read-and-run '("ignore"))))
       (expect 'amx-default-get-text :to-have-been-called)))
 
@@ -229,7 +229,7 @@ equal."
     (it "should properly update and rerun"
       (spy-on 'amx-ido-get-text :and-call-through)
       (let ((enable-recursive-minibuffers t))
-        (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+        (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
           (amx-read-and-run '("ignore"))))
       (expect 'amx-ido-get-text :to-have-been-called)))
 
@@ -260,7 +260,7 @@ equal."
           (it "should properly update and rerun"
             (spy-on 'amx-ivy-get-text :and-call-through)
             (let ((enable-recursive-minibuffers t))
-              (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+              (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
                 (amx-read-and-run '("ignore"))))
             (expect 'amx-ivy-get-text :to-have-been-called)))
       (xit "is not available for testing")))
@@ -304,12 +304,12 @@ equal."
             (expect (featurep 'selectrum)))
 
           (it "should call `selectrum-read'"
-            (spy-on 'selectrum-read :and-call-through)
+            (spy-on 'selectrum-completing-read :and-call-through)
             (expect
              (with-simulated-input "ignore RET"
                (amx-completing-read '("ignore")))
              :to-equal "ignore")
-            (expect 'selectrum-read
+            (expect 'selectrum-completing-read
                     :to-have-been-called))
           (it "should properly exit the minibuffer with custom actions"
             (spy-on 'where-is)
@@ -317,11 +317,11 @@ equal."
               (amx-read-and-run '("ignore")))
             (expect 'where-is :to-have-been-called-with 'ignore))
           (it "should properly update and rerun"
-            (spy-on 'amx-selectrum-get-text :and-call-through)
+            (spy-on 'amx-default-get-text :and-call-through)
             (let ((enable-recursive-minibuffers t))
-              (with-simulated-input '("ig" (amx-update-and-rerun) "nore RET")
+              (with-simulated-input ("ig" (amx-update-and-rerun) "nore RET")
                 (amx-read-and-run '("ignore"))))
-            (expect 'amx-selectrum-get-text :to-have-been-called)))
+            (expect 'amx-default-get-text :to-have-been-called)))
       (xit "is not available for testing")))
 
   (describe "auto backend"
@@ -347,7 +347,7 @@ equal."
             (selectrum-mode 0)
             (cl-loop
              for fun in
-             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read selectrum-read)
+             '(completing-read-default ido-completing-read+ ivy-read helm-comp-read selectrum-completing-read)
              do (spy-on fun :and-return-value "ignore")))
 
           ;; Restore the saved value after each test
@@ -380,7 +380,7 @@ equal."
           (it "should use selectrum completion when `selectrum-mode' is enabled"
             (selectrum-mode 1)
             (amx-completing-read '("ignore"))
-            (expect 'selectrum-read
+            (expect 'selectrum-completing-read
                     :to-have-been-called)))
       (xit "is not available for testing")))
 
@@ -684,7 +684,36 @@ equal."
           (expect amx-history
                   :to-equal saved-amx-history)
           (expect amx-data
-                  :to-equal saved-amx-data)))))
+                  :to-equal saved-amx-data))))
+    (it "should correctly restore even unknown commands from history"
+      (customize-set-variable
+       'amx-save-file
+       (make-temp-name
+        (expand-file-name "amx-items-temp-"
+                          temporary-file-directory)))
+      ;; Define a command
+      (defun amx-test-my-special-command ()
+        (interactive)
+        (message "Ran my special command!"))
+      ;; Ensure that amx knows about the command, and make it think
+      ;; the command has never been called before
+      (amx-update)
+      (setcdr (assq 'amx-test-my-special-command amx-cache) nil)
+      ;; Call the command a few times to get it into the amx history
+      (dotimes (i 3)
+        (with-simulated-input "amx-test-my-special-command RET"
+          (amx-read-and-run amx-cache)))
+      ;; Save the amx history with my-special-command in it
+      (amx-save-to-file)
+      ;; Now make the command no longer defined
+      (fmakunbound 'amx-test-my-special-command)
+      ;; Now force a re-read of history from file
+      (amx-initialize t)
+      ;; Should be in history
+      (expect amx-history :to-contain 'amx-test-my-special-command)
+      ;; Should be in data and cache
+      (expect (cdr (assq 'amx-test-my-special-command amx-data)) :to-equal 3)
+      (expect (cdr (assq 'amx-test-my-special-command amx-cache)) :to-equal 3)))
 
   (describe "with `amx-ignored-command-matchers'"
 

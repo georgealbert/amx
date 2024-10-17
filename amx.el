@@ -9,8 +9,8 @@
 ;; Maintainer: Ryan C. Thompson <rct@thompsonclan.org>
 ;; URL: http://github.com/DarwinAwardWinner/amx/
 ;; Package-Requires: ((emacs "24.4") (s "0"))
-;; Version: 3.3
-;; Keywords: convenience, usability
+;; Version: 3.4
+;; Keywords: convenience, usability, completion
 
 ;; This file is not part of GNU Emacs.
 
@@ -189,10 +189,7 @@ periodic updates will be performed."
 (defun amx-set-save-file (symbol value)
   "Custom setter for `amx-save-file'.
 
-Arguments are the same as in `set-default'.
-
-This function will refuse to set the backend unless it can load
-the associated feature, if any."
+Arguments are the same as in `set-default'."
   (cl-assert (eq symbol 'amx-save-file))
   (let ((old-value (when (boundp symbol) (symbol-value symbol))))
     (set-default symbol value)
@@ -202,14 +199,21 @@ the associated feature, if any."
         (when (bound-and-true-p amx-initialized)
           (amx-initialize t))
       ;; If the new save file doesn't exist but the old one does, copy
-      ;; the old file to the new location.
+      ;; the old file to the new location. In this case we don't need
+      ;; to re-initialize, because the contents of the file have not
+      ;; changed.
       (when (and old-value (file-exists-p old-value))
         (copy-file old-value value)))))
 
 (defcustom amx-save-file (locate-user-emacs-file "amx-items" ".amx-items")
   "File in which the amx state is saved between Emacs sessions.
 
-Variables stored are: `amx-data', `amx-history'."
+Variables stored are: `amx-data', `amx-history'.
+
+When changing this variable through Custom, amx will check for an
+already-existing file at the new path. If it exists, amx will
+re-initialize using this file. Otherwise, it will copy the
+current save file from the old location to the new one."
   :type '(choice (string :tag "File name")
                  (const :tag "Don't save" nil))
   :set #'amx-set-save-file)
@@ -236,6 +240,7 @@ nil) if you don't find it useful."
     "\\`self-insert-and-exit\\'"
     "\\`ad-Orig-"
     "\\`menu-bar"
+    "\\`kill-emacs\\'"
     amx-command-marked-ignored-p
     amx-command-obsolete-p
     amx-command-mouse-interactive-p)
@@ -492,7 +497,7 @@ A backend must be defined with at least a `:name' and a
 `:comp-fun' must accept the same arguments as
 `amx-completing-read-default'.
 
-Additionally, a backend muse declare a `:get-text-fun', unless
+Additionally, a backend must declare a `:get-text-fun', unless
 `amx-default-get-text' is sufficient to get the user's currently
 entered text for the backend. Similarly, if pressing RET is not
 the correct way to exit the minibuffer with the currently
@@ -535,7 +540,7 @@ choose the backend."
    (t (error "Unknown amx backed %S" backend))))
 
 (cl-defun amx-completing-read-default (choices &key initial-input predicate def)
-  "Amx backend for default Emacs completion"
+  "Amx backend for default Emacs completion."
   (amx--debug-message "Preparing default-style completion")
   (require 'minibuf-eldef)
   (let ((minibuffer-completion-table choices)
@@ -571,7 +576,7 @@ May not work for things like ido and ivy."
 (declare-function ido-completing-read+ "ext:ido-completing-read+")
 
 (cl-defun amx-completing-read-ido (choices &key initial-input predicate def)
-  "Amx backend for ido completion"
+  "Amx backend for ido completion."
   (require 'ido-completing-read+)
   (let ((ido-completion-map ido-completion-map)
         (ido-setup-hook (cons 'amx-prepare-ido-bindings ido-setup-hook))
@@ -594,7 +599,7 @@ May not work for things like ido and ivy."
 (declare-function ivy-read "ext:ivy")
 
 (cl-defun amx-completing-read-ivy (choices &key initial-input predicate def)
-  "Amx backend for ivy completion"
+  "Amx backend for ivy completion."
   (require 'ivy)
   (ivy-read (amx-prompt-with-prefix-arg) choices
             :predicate predicate
@@ -652,8 +657,8 @@ May not work for things like ido and ivy."
 (declare-function helm-comp-read "ext:helm-mode")
 
 (cl-defun amx-completing-read-helm (choices &key initial-input predicate def)
-  "Amx backend for helm completion"
-  (require 'helm-config)
+  "Amx backend for helm completion."
+  (require 'helm)
   (require 'helm-mode)                  ; Provides `helm-comp-read-map'
   (helm-comp-read (amx-prompt-with-prefix-arg) choices
                   :initial-input initial-input
@@ -664,6 +669,8 @@ May not work for things like ido and ivy."
                   :history 'extended-command-history
                   :reverse-history t
                   :must-match t
+                  :fuzzy (or (bound-and-true-p helm-mode-fuzzy-match)
+                             (bound-and-true-p helm-M-x-fuzzy-match))
                   :keymap (make-composed-keymap amx-map helm-comp-read-map)))
 
 (amx-define-backend
@@ -674,49 +681,48 @@ May not work for things like ido and ivy."
  :required-feature 'helm
  :auto-activate '(bound-and-true-p helm-mode))
 
-(declare-function selectrum-read "ext:selectrum")
-(declare-function selectrum--normalize-collection "ext:selectrum")
+(declare-function selectrum-completing-read "ext:selectrum")
+(defvar selectrum-should-sort)
 (defvar selectrum-should-sort-p)
-(defvar selectrum--previous-input-string)
 
 (cl-defun amx-completing-read-selectrum (choices &key initial-input predicate def)
   "Amx backend for selectrum completion."
-  (let ((choices (cl-remove-if-not (or predicate #'identity)
-                                   choices))
-        (selectrum-should-sort-p nil))
-    (minibuffer-with-setup-hook
-        (lambda ()
-          (use-local-map (make-composed-keymap
-                          (list amx-map (current-local-map)))))
-      (selectrum-read (amx-prompt-with-prefix-arg)
-                      (selectrum--normalize-collection choices)
-                      :history 'extended-command-history
-                      :require-match t
-                      :default-candidate def
-                      :initial-input initial-input))))
-
-(defun amx-selectrum-get-text ()
-  selectrum--previous-input-string)
+  (minibuffer-with-setup-hook
+      (lambda ()
+        (setq-local selectrum-should-sort nil)
+        (use-local-map (make-composed-keymap
+                        (list amx-map (current-local-map)))))
+    ;; FIXME: `selectrum-should-sort-p' should be removed after it can be
+    ;; assumed all amx users updated also Selectrum.
+    (let ((selectrum-should-sort-p nil))
+      (selectrum-completing-read (amx-prompt-with-prefix-arg)
+                                 choices
+                                 predicate
+                                 t
+                                 initial-input
+                                 'extended-command-history
+                                 def))))
 
 (amx-define-backend
  :name 'selectrum
  :comp-fun 'amx-completing-read-selectrum
- :get-text-fun 'amx-selectrum-get-text
+ :get-text-fun 'amx-default-get-text
  :required-feature 'selectrum
  :auto-activate '(bound-and-true-p selectrum-mode))
 
 (defsubst amx-auto-select-backend ()
-  (cl-loop for (bname b) on amx-known-backends by 'cddr
-         ;; Don't auto-select the auto backend, or the
-         ;; default backend.
-         unless (memq bname '(auto standard))
-         ;; Auto-select a backend if its auto-activate
-         ;; condition evaluates to non-nil.
-         if (ignore-errors (eval (amx-backend-auto-activate b)))
-         return b
-         ;; If no backend's auto-activate condition is
-         ;; fulfilled, auto-select the standard backend.
-         finally return 'standard))
+  (cl-loop
+   for (bname b) on amx-known-backends by 'cddr
+   ;; Don't auto-select the auto backend, or the
+   ;; default backend.
+   unless (memq bname '(auto standard))
+   ;; Auto-select a backend if its auto-activate
+   ;; condition evaluates to non-nil.
+   if (ignore-errors (eval (amx-backend-auto-activate b)))
+   return b
+   ;; If no backend's auto-activate condition is
+   ;; fulfilled, auto-select the standard backend.
+   finally return 'standard))
 
 (cl-defun amx-completing-read-auto (choices &key initial-input predicate def)
   "Automatically select the appropriate completion system for M-x.
@@ -776,13 +782,11 @@ the associated feature, if any."
   (set-default symbol value))
 
 (defcustom amx-backend 'auto
-  "Completion function to select a candidate from a list of strings.
+  "Completion backend used by amx.
 
-This function should take the same arguments as
-`amx-completing-read': CHOICES and INITIAL-INPUT.
-
-By default, an appropriate method is selected based on whether
-`ivy-mode' or `ido-mode' is enabled."
+This should be the name of backend defined using
+`amx-define-backend', such as `ido' or `ivy', or the symbol
+`auto' to have amx select a backend automatically."
   :type '(choice
           (const :tag "Auto-select" auto)
           (const :tag "Ido" ido)
@@ -805,10 +809,10 @@ By default, an appropriate method is selected based on whether
   ;; This speeds up sorting.
   (let (new-commands)
     (mapatoms (lambda (symbol)
-                (when (commandp symbol)
-                  (let ((known-command (assq symbol amx-data)))
-                    (if known-command
-                        (setq amx-cache (cons known-command amx-cache))
+                (let ((known-command (assq symbol amx-data)))
+                  (if known-command
+                      (setq amx-cache (cons known-command amx-cache))
+                    (when (commandp symbol)
                       (setq new-commands (cons (list symbol) new-commands)))))))
     (if (eq (length amx-cache) 0)
         (setq amx-cache new-commands)
@@ -870,8 +874,8 @@ Otherwise, if optional arg COUNT-COMMANDS is non-nil, count the
 total number of defined commands in `obarray' and update if it
 has changed."
   (if (or (null amx-last-update-time)
-            (and count-commands
-                 (amx-detect-new-commands)))
+          (and count-commands
+               (amx-detect-new-commands)))
       (amx-update)
     (amx--debug-message "No update needed at this time.")))
 
@@ -882,8 +886,8 @@ has changed."
 This function is normally idempotent, only having an effect the
 first time it is called, so it is safe to call it at the
 beginning of any function that expects amx to be initialized.
-However, optional arg REINIT forces the initialization needs to
-be re-run. Interactively, reinitialize when a prefix arg is
+However, optional arg REINIT forces the initialization to be
+re-run. Interactively, reinitialize when a prefix arg is
 provided."
   (interactive "P")
   (when (or reinit (not amx-initialized))
@@ -1386,7 +1390,7 @@ current."
   (when amx-short-idle-update-timer
     (cancel-timer amx-short-idle-update-timer))
   (setq amx-short-idle-update-timer
-      (run-with-idle-timer 1 t 'amx-idle-update)))
+        (run-with-idle-timer 1 t 'amx-idle-update)))
 
 (provide 'amx)
 ;;; amx.el ends here
