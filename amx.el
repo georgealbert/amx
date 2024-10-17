@@ -616,6 +616,39 @@ May not work for things like ido and ivy."
  :required-feature 'ivy
  :auto-activate '(bound-and-true-p ivy-mode))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; begin of vertico
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(declare-function consult--read "ext:consult")
+
+(cl-defun amx-completing-read-consult (choices &key initial-input predicate def)
+  "Amx backend for consult completion"
+  (require 'consult)
+  (let ((amx-prompt-string "Consult M-x "))
+    (consult--read choices
+                   ;; 带参数的M-x的提示
+                   :prompt (amx-prompt-with-prefix-arg)
+                   :predicate predicate
+                   :require-match t
+                   :history 'extended-command-history
+                   :default def
+                   :keymap amx-map
+                   :initial initial-input
+                   ;; [2024-10-17 Thu 10:06:45] 原来是sort这个参数默认是t，把choices给排序，所以在前面看不见history了，只能看见最后一个命令
+                   ;; choices里面本来就包含了history的
+                   :sort nil
+                   )))
+
+(amx-define-backend
+ :name 'consult
+ :comp-fun 'amx-completing-read-consult
+ :get-text-fun 'amx-default-get-text
+ :required-feature 'consult
+ :auto-activate '(bound-and-true-p vertico-mode))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; end of vertico
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (declare-function helm-comp-read "ext:helm-mode")
 
 (cl-defun amx-completing-read-helm (choices &key initial-input predicate def)
@@ -755,6 +788,7 @@ By default, an appropriate method is selected based on whether
           (const :tag "Ido" ido)
           (const :tag "Ivy" ivy)
           (const :tag "Helm" helm)
+          (const :tag "Consult" consult)
           (const :tag "Standard" standard)
           (symbol :tag "Custom backend"))
   :set #'amx-set-backend)
