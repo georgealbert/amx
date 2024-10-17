@@ -661,7 +661,7 @@ May not work for things like ido and ivy."
                   :default def
                   :name "Helm M-x Completions - amx"
                   :buffer "Helm M-x Completions"
-                  :history extended-command-history
+                  :history 'extended-command-history
                   :reverse-history t
                   :must-match t
                   :keymap (make-composed-keymap amx-map helm-comp-read-map)))
@@ -788,6 +788,7 @@ By default, an appropriate method is selected based on whether
           (const :tag "Ido" ido)
           (const :tag "Ivy" ivy)
           (const :tag "Helm" helm)
+          (const :tag "Selectrum" selectrum)
           (const :tag "Consult" consult)
           (const :tag "Standard" standard)
           (symbol :tag "Custom backend"))
